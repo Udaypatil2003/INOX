@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated } from 'react
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { THEME } from '../constants/theme';
 
-export default function PaymentSuccessModal({ visible, amount, paymentId, onClose }) {
+export default function PaymentStatusModal({ visible, status = 'success', amount, message, onClose }) {
+  const isSuccess = status === 'success';
+
   const scaleAnim = useRef(new Animated.Value(0.85)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -38,22 +40,36 @@ export default function PaymentSuccessModal({ visible, amount, paymentId, onClos
             { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
           ]}
         >
-          <View style={styles.iconRing}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="checkmark" size={38} color="#FFFFFF" />
+          <View
+            style={[
+              styles.iconRing,
+              { backgroundColor: isSuccess ? THEME.colors.vegLight : THEME.colors.nonVegLight },
+            ]}
+          >
+            <View
+              style={[
+                styles.iconCircle,
+                { backgroundColor: isSuccess ? THEME.colors.veg : THEME.colors.nonVeg },
+              ]}
+            >
+              <Ionicons name={isSuccess ? 'checkmark' : 'close'} size={38} color="#FFFFFF" />
             </View>
           </View>
 
-          <Text style={styles.title}>Payment Successful</Text>
-          <Text style={styles.amount}>₹{Number(amount).toFixed(2)} paid</Text>
-          {paymentId ? (
-            <Text style={styles.paymentId} numberOfLines={1}>
-              Payment ID: {paymentId}
-            </Text>
-          ) : null}
+          <Text style={styles.title}>{isSuccess ? 'Payment Successful' : 'Payment Failed'}</Text>
 
-          <TouchableOpacity activeOpacity={0.85} onPress={onClose} style={styles.doneButton}>
-            <Text style={styles.doneButtonText}>Done</Text>
+          {isSuccess ? (
+            <Text style={styles.message}>₹{Number(amount).toFixed(2)} paid</Text>
+          ) : (
+            <Text style={styles.message}>{message || 'Your payment could not be completed.'}</Text>
+          )}
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={onClose}
+            style={[styles.doneButton, !isSuccess && styles.doneButtonNeutral]}
+          >
+            <Text style={styles.doneButtonText}>{isSuccess ? 'Done' : 'OK'}</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -88,7 +104,6 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: THEME.colors.vegLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 18,
@@ -97,7 +112,6 @@ const styles = StyleSheet.create({
     width: 62,
     height: 62,
     borderRadius: 31,
-    backgroundColor: THEME.colors.veg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -108,18 +122,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     marginBottom: 6,
   },
-  amount: {
-    fontSize: 16,
-    fontWeight: '700',
+  message: {
+    fontSize: 15,
+    fontWeight: '600',
     color: THEME.colors.textPrimary,
+    textAlign: 'center',
     marginBottom: 20,
-  },
-  paymentId: {
-    fontSize: 11.5,
-    color: THEME.colors.textMuted,
-    marginTop: -14,
-    marginBottom: 20,
-    maxWidth: '100%',
   },
   doneButton: {
     width: '100%',
@@ -128,6 +136,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
+  },
+  doneButtonNeutral: {
+    backgroundColor: THEME.colors.background,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
   },
   doneButtonText: {
     fontSize: 16,

@@ -10,7 +10,6 @@ import {
   Animated,
   Dimensions,
   Platform,
-  Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import RazorpayCheckout from 'react-native-razorpay';
@@ -25,7 +24,7 @@ import {
 } from './cartStore';
 import foodService from '../../services/foodService';
 import CartLineItem from '../../components/CartLineItem';
-import PaymentSuccessModal from '../../components/PaymentSuccessModal';
+import PaymentStatusModal from '../../components/PaymentStatusModal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -37,7 +36,7 @@ export default function CartBottomSheet() {
   const increment = (itemId) => dispatch(incrementAction(itemId));
   const decrement = (itemId) => dispatch(decrementAction(itemId));
 
-  const [paymentSuccess, setPaymentSuccess] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState(null);
 
   const itemsMap = foodService.getItemsMap();
 
@@ -114,20 +113,24 @@ export default function CartBottomSheet() {
 
     RazorpayCheckout.open(options)
       .then((data) => {
-        setPaymentSuccess({ amount: totalAmount, paymentId: data.razorpay_payment_id });
+        setPaymentStatus({ status: 'success', amount: totalAmount, paymentId: data.razorpay_payment_id });
         dispatch(clearCartAction());
       })
-      .catch((error) => {
-        Alert.alert('Payment Failed', error.description || 'Payment was cancelled.');
+      .catch(() => {
+        setPaymentStatus({
+          status: 'failed',
+          message: "Your payment didn't go through. Please try again.",
+        });
       });
   };
 
-  const handleDismissSuccess = () => {
-    setPaymentSuccess(null);
-    closeCart();
+  const handleDismissPaymentStatus = () => {
+    const wasSuccess = paymentStatus?.status === 'success';
+    setPaymentStatus(null);
+    if (wasSuccess) closeCart();
   };
 
-  if (!isCartOpen && !paymentSuccess) return null;
+  if (!isCartOpen && !paymentStatus) return null;
 
   return (
     <>
@@ -227,11 +230,12 @@ export default function CartBottomSheet() {
       </View>
     </Modal>
 
-    <PaymentSuccessModal
-      visible={!!paymentSuccess}
-      amount={paymentSuccess?.amount}
-      paymentId={paymentSuccess?.paymentId}
-      onClose={handleDismissSuccess}
+    <PaymentStatusModal
+      visible={!!paymentStatus}
+      status={paymentStatus?.status}
+      amount={paymentStatus?.amount}
+      message={paymentStatus?.message}
+      onClose={handleDismissPaymentStatus}
     />
     </>
   );
